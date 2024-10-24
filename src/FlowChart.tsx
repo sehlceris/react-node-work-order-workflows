@@ -32,8 +32,8 @@ export const FlowChart = () => {
 
   const { setViewport, screenToFlowPosition, deleteElements } = useReactFlow();
 
-  const createOnLabelChange = useCallback(
-    (nodeId: string) => (label: string) => {
+  const onLabelChange = useCallback(
+    (nodeId: string, label: string) => {
       setNodes((nds) =>
         nds.map((n) =>
           n.id === nodeId ? { ...n, data: { ...n.data, label } } : n,
@@ -43,46 +43,42 @@ export const FlowChart = () => {
     [setNodes],
   );
 
-  const createOnStatusChange = useCallback(
-    (nodeId: string) => (isComplete: boolean) => {
-      setNodes((nds) => {
-        const updatedNodes = nds.map((n) =>
-          n.id === nodeId ? { ...n, data: { ...n.data, isComplete } } : n,
-        );
-
-        // Check and update dependent nodes
-        return updatedNodes.map((node) => {
-          const incomingEdges = edges.filter((edge) => edge.target === node.id);
-          const allDependenciesComplete = incomingEdges.every(
-            (edge) =>
-              updatedNodes.find((n) => n.id === edge.source)?.data.isComplete,
-          );
-
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              isActive: allDependenciesComplete && !node.data.isComplete,
-            },
-          };
-        });
-      });
-    },
-    [setNodes, edges],
-  );
-
-  const createOnDelete = useCallback(
-    (id: string) => () => {
-      console.log('deleteElement', id);
+  const onDelete = useCallback(
+    (nodeId: string) => {
+      console.log('deleteElement', nodeId);
       deleteElements({
         nodes: [
           {
-            id,
+            id: nodeId,
           },
         ],
       });
     },
     [deleteElements],
+  );
+
+  const onStatusChange = useCallback(
+    (nodeId: string, isComplete: boolean) => {
+      setNodes((currentNodes) =>
+        currentNodes.map((node) => {
+          // Update the node that had its completion status changed
+          if (node.id === nodeId) {
+            return {
+              ...node,
+              data: { ...node.data, isComplete, isActive: false },
+            };
+          }
+          // All other nodes get deactivated
+          else {
+            return {
+              ...node,
+              data: { ...node.data, isActive: false },
+            };
+          }
+        }),
+      );
+    },
+    [setNodes],
   );
 
   const createNode = useCallback(
@@ -94,29 +90,25 @@ export const FlowChart = () => {
         label: `Node ${id}`,
         isComplete: false,
         isActive: false,
-        onLabelChange: createOnLabelChange(id),
-        onStatusChange: createOnStatusChange(id),
-        onDelete: createOnDelete(id),
+        onLabelChange,
+        onStatusChange,
+        onDelete,
       },
       origin: [0.5, 0.0],
     }),
-    [createOnLabelChange, createOnStatusChange, createOnDelete],
+    [onLabelChange, onDelete, onStatusChange],
   );
 
   const onResetNodeCompletion = useCallback(() => {
     setNodes((nds) => {
       const result = nds.map((n) => ({
         ...n,
-        data: { ...n.data, isComplete: false },
+        data: { ...n.data, isComplete: false, isActive: false },
       }));
       console.log('reset nodes', nds, result);
       return result;
     });
   }, [setNodes]);
-
-  useEffect(() => {
-    console.log('nodes', nodes);
-  }, [nodes]);
 
   const onAddNode = useCallback(() => {
     const newNode = createNode(`${nodes.length + 1}`, { x: 0, y: 0 });
@@ -126,7 +118,7 @@ export const FlowChart = () => {
   const onSave = useCallback(() => {
     if (rfInstance) {
       const flow = rfInstance.toObject();
-      console.log('onSave', flow);
+      //   console.log('onSave', flow);
       localStorage.setItem(flowKey, JSON.stringify(flow));
     }
   }, [rfInstance]);
@@ -142,9 +134,9 @@ export const FlowChart = () => {
         ...node,
         data: {
           ...node.data,
-          onLabelChange: createOnLabelChange(node.id),
-          onStatusChange: createOnStatusChange(node.id),
-          onDelete: createOnDelete(node.id),
+          onLabelChange,
+          onStatusChange,
+          onDelete,
         },
       }));
       setNodes(restoredNodes);
@@ -155,9 +147,9 @@ export const FlowChart = () => {
     setNodes,
     setEdges,
     setViewport,
-    createOnLabelChange,
-    createOnStatusChange,
-    createOnDelete,
+    onLabelChange,
+    onDelete,
+    onStatusChange,
   ]);
 
   const onConnect: OnConnect = useCallback(
