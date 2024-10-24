@@ -66,8 +66,6 @@ export default function App() {
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onNodeDoubleClick={onNodeDoubleClick}
-            deleteKeyCode="Delete"
-            // nodeTypes={{ appNode: CustomNode }}
           >
             <Controls />
             <MiniMap />
