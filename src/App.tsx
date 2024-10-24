@@ -29,18 +29,21 @@ export default function App() {
   );
 
   return (
-    <div style={{ width: "100vw", height: "100vh" }}>
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-      >
-        <Controls />
-        <MiniMap />
-        <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
-      </ReactFlow>
+    <div className="w-full h-full p-4 flex flex-col">
+      <h1>Workflow Editor</h1>
+      <div className="mt-4 flex-auto border border-gray-200 rounded-lg">
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+        >
+          <Controls />
+          <MiniMap />
+          <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+        </ReactFlow>
+      </div>
     </div>
   );
 }
