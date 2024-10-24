@@ -55,13 +55,17 @@ export const FlowChart = () => {
   );
 
   const createOnDelete = useCallback(
-    (nodeId: string) => () => {
-      console.log('deleteElements', nodeId);
+    (id: string) => () => {
+      console.log('deleteElement', id);
       deleteElements({
-        nodes: nodes.filter((it) => it.id === nodeId),
+        nodes: [
+          {
+            id,
+          },
+        ],
       });
     },
-    [deleteElements, nodes],
+    [deleteElements],
   );
 
   const createNode = useCallback(
