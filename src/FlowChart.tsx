@@ -86,9 +86,14 @@ export const FlowChart = () => {
   );
 
   const onResetNodeCompletion = useCallback(() => {
-    setNodes((nds) =>
-      nds.map((n) => ({ ...n, data: { ...n.data, isComplete: false } })),
-    );
+    setNodes((nds) => {
+      const result = nds.map((n) => ({
+        ...n,
+        data: { ...n.data, isComplete: false },
+      }));
+      console.log('reset nodes', nds, result);
+      return result;
+    });
   }, [setNodes]);
 
   useEffect(() => {

@@ -12,7 +12,7 @@ export const AppCustomNode = ({ id, data }: NodeProps<AppNode>) => (
       <label className="flex items-center">
         <input
           type="checkbox"
-          defaultChecked={data.isComplete}
+          checked={data.isComplete}
           onChange={() => data.onStatusChange?.(!data.isComplete)}
         />
         <span className="ml-2">Done</span>
