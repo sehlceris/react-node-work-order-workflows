@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -24,6 +24,7 @@ import { AppCustomNode } from './AppCustomNode';
 const flowKey = 'react-flow-persistence';
 
 export const FlowChart = () => {
+  const initialized = useRef(false);
   const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<AppNode>([]);
@@ -113,7 +114,7 @@ export const FlowChart = () => {
       }
     };
 
-    restoreFlow();
+    return restoreFlow;
   }, [
     setNodes,
     setEdges,
@@ -122,6 +123,13 @@ export const FlowChart = () => {
     createOnStatusChange,
     createOnDelete,
   ]);
+
+  useEffect(() => {
+    if (!initialized.current && onRestore) {
+      initialized.current = true;
+      onRestore();
+    }
+  }, [onRestore]);
 
   const onConnect: OnConnect = useCallback(
     (connection: Connection) => setEdges((eds) => addEdge(connection, eds)),
