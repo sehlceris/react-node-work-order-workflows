@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -14,7 +14,7 @@ import {
 } from '@xyflow/react';
 
 import '@xyflow/react/dist/style.css';
-import { CustomNode } from './AppCustomNode';
+import { AppCustomNode } from './AppCustomNode';
 import { AppNode } from './types';
 import { initialNodes, initialEdges } from './util';
 
