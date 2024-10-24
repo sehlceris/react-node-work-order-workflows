@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -11,29 +11,12 @@ import {
   BackgroundVariant,
   Node,
   NodeProps,
-} from "@xyflow/react";
+} from '@xyflow/react';
 
-import "@xyflow/react/dist/style.css";
-
-type AppNode = Node<{ label: string; onRemove?: (id: string) => void }, "appNode">;
-
-const initialNodes: AppNode[] = [
-  { id: "1", position: { x: 0, y: 0 }, data: { label: "Node 1" } },
-  { id: "2", position: { x: 0, y: 100 }, data: { label: "Node 2" } },
-];
-const initialEdges = [{ id: "e1-2", source: "1", target: "2" }];
-
-export const CustomNode = ({ id, data }: NodeProps<AppNode>) => (
-  <div className="relative bg-white border border-gray-300 rounded p-2">
-    <button
-      className="absolute top-0 right-0 text-red-500 font-bold"
-      onClick={() => data.onRemove?.(id)}
-    >
-      X
-    </button>
-    {data.label}
-  </div>
-);
+import '@xyflow/react/dist/style.css';
+import { CustomNode } from './AppCustomNode';
+import { AppNode } from './types';
+import { initialNodes, initialEdges } from './util';
 
 export default function App() {
   const [nodes, setNodes, onNodesChange] = useNodesState<AppNode>(initialNodes);
@@ -41,7 +24,7 @@ export default function App() {
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
+    [setEdges],
   );
 
   const onAddNode = useCallback(() => {
@@ -49,6 +32,7 @@ export default function App() {
       id: `${nodes.length + 1}`,
       data: { label: `Node ${nodes.length + 1}` },
       position: { x: 0, y: 0 },
+      type: 'appNode',
     };
 
     setNodes((nds) => nds.concat(newNode));
@@ -56,18 +40,18 @@ export default function App() {
 
   const onNodeDoubleClick = useCallback(
     (_event: React.MouseEvent, node: AppNode) => {
-      const newLabel = prompt("Enter new label:", node.data.label);
+      const newLabel = prompt('Enter new label:', node.data.label);
       if (newLabel) {
         setNodes((nds) =>
           nds.map((n) =>
             n.id === node.id
               ? { ...n, data: { ...n.data, label: newLabel } }
-              : n
-          )
+              : n,
+          ),
         );
       }
     },
-    [setNodes]
+    [setNodes],
   );
 
   return (
@@ -83,6 +67,7 @@ export default function App() {
             onConnect={onConnect}
             onNodeDoubleClick={onNodeDoubleClick}
             deleteKeyCode="Delete"
+            // nodeTypes={{ appNode: CustomNode }}
           >
             <Controls />
             <MiniMap />
