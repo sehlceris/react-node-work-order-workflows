@@ -31,25 +31,35 @@ export const FlowChart = () => {
 
   const { setViewport, screenToFlowPosition } = useReactFlow();
 
-  const onAddNode = useCallback(() => {
-    const newNode: AppNode = {
-      id: `${nodes.length + 1}`,
-      type: 'appNode',
-      position: { x: 0, y: 0 },
-      data: {
-        label: `Node ${nodes.length + 1}`,
-        onLabelChange: (label: string) => {
-          setNodes((nds) =>
-            nds.map((n) =>
-              n.id === newNode.id ? { ...n, data: { ...n.data, label } } : n,
-            ),
-          );
-        },
-      },
-    };
+  const createOnLabelChange = useCallback(
+    (nodeId: string) => (label: string) => {
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === nodeId ? { ...n, data: { ...n.data, label } } : n,
+        ),
+      );
+    },
+    [setNodes],
+  );
 
+  const createNode = useCallback(
+    (id: string, position: { x: number; y: number }): AppNode => ({
+      id,
+      type: 'appNode',
+      position,
+      data: {
+        label: `Node ${id}`,
+        onLabelChange: createOnLabelChange(id),
+      },
+      origin: [0.5, 0.0],
+    }),
+    [createOnLabelChange],
+  );
+
+  const onAddNode = useCallback(() => {
+    const newNode = createNode(`${nodes.length + 1}`, { x: 0, y: 0 });
     setNodes((nds) => nds.concat(newNode));
-  }, [nodes, setNodes]);
+  }, [nodes.length, createNode, setNodes]);
 
   const onSave = useCallback(() => {
     if (rfInstance) {
@@ -69,13 +79,7 @@ export const FlowChart = () => {
           ...node,
           data: {
             ...node.data,
-            onLabelChange: (label: string) => {
-              setNodes((nds) =>
-                nds.map((n) =>
-                  n.id === node.id ? { ...n, data: { ...n.data, label } } : n,
-                ),
-              );
-            },
+            onLabelChange: createOnLabelChange(node.id),
           },
         }));
         setNodes(restoredNodes);
@@ -85,7 +89,7 @@ export const FlowChart = () => {
     };
 
     restoreFlow();
-  }, [setEdges, setNodes, setViewport]);
+  }, [setEdges, setNodes, setViewport, createOnLabelChange]);
 
   const onConnect: OnConnect = useCallback(
     (connection: Connection) => setEdges((eds) => addEdge(connection, eds)),
@@ -94,33 +98,14 @@ export const FlowChart = () => {
 
   const onConnectEnd: OnConnectEnd = useCallback(
     (event, connectionState: ConnectionState) => {
-      // when a connection is dropped on the pane it's not valid
       if (!connectionState.isValid) {
-        // we need to remove the wrapper bounds, in order to get the correct position
         const id = `${nodes.length + 1}`;
         const { clientX, clientY } =
           'changedTouches' in event ? event.changedTouches[0] : event;
-        const newNode: AppNode = {
+        const newNode = createNode(
           id,
-          position: screenToFlowPosition({
-            x: clientX,
-            y: clientY,
-          }),
-          data: {
-            label: `Node ${id}`,
-            onLabelChange: (label: string) => {
-              setNodes((nds) =>
-                nds.map((n) =>
-                  n.id === newNode.id
-                    ? { ...n, data: { ...n.data, label } }
-                    : n,
-                ),
-              );
-            },
-          },
-          type: 'appNode',
-          origin: [0.5, 0.0],
-        };
+          screenToFlowPosition({ x: clientX, y: clientY }),
+        );
 
         setNodes((nds) => nds.concat(newNode));
         setEdges((eds) =>
@@ -128,7 +113,7 @@ export const FlowChart = () => {
         );
       }
     },
-    [nodes.length, screenToFlowPosition, setNodes, setEdges],
+    [nodes.length, screenToFlowPosition, setNodes, setEdges, createNode],
   );
 
   // save flow upon update
