@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -11,6 +11,9 @@ import {
   BackgroundVariant,
   Node,
   NodeProps,
+  useReactFlow,
+  ReactFlowInstance,
+  ReactFlowProvider,
 } from '@xyflow/react';
 
 import '@xyflow/react/dist/style.css';
@@ -18,30 +21,15 @@ import { AppNode } from './types';
 import { initialNodes, initialEdges } from './util';
 import { AppCustomNode } from './AppCustomNode';
 
-export default function App() {
-  const [nodes, setNodes, onNodesChange] = useNodesState<AppNode>(
-    initialNodes.map((initialNode) => ({
-      ...initialNode,
-      data: {
-        ...initialNode.data,
-        onLabelChange: (label) => {
-          setNodes((nds) =>
-            nds.map((n) =>
-              n.id === initialNode.id
-                ? { ...n, data: { ...n.data, label } }
-                : n,
-            ),
-          );
-        },
-      },
-    })),
-  );
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+const flowKey = 'react-flow-persistence';
 
-  const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges],
-  );
+export default function App() {
+  const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
+
+  const [nodes, setNodes, onNodesChange] = useNodesState<AppNode>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+  const { setViewport } = useReactFlow();
 
   const onAddNode = useCallback(() => {
     const newNode: AppNode = {
@@ -63,21 +51,41 @@ export default function App() {
     setNodes((nds) => nds.concat(newNode));
   }, [nodes, setNodes]);
 
-  const onNodeDoubleClick = useCallback(
-    (_event: React.MouseEvent, node: AppNode) => {
-      const newLabel = prompt('Enter new label:', node.data.label);
-      if (newLabel) {
-        setNodes((nds) =>
-          nds.map((n) =>
-            n.id === node.id
-              ? { ...n, data: { ...n.data, label: newLabel } }
-              : n,
-          ),
-        );
-      }
-    },
-    [setNodes],
+  const onConnect = useCallback(
+    (params) => setEdges((eds) => addEdge(params, eds)),
+    [setEdges],
   );
+  const onSave = useCallback(() => {
+    if (rfInstance) {
+      const flow = rfInstance.toObject();
+      localStorage.setItem(flowKey, JSON.stringify(flow));
+    }
+  }, [rfInstance]);
+
+  const onRestore = useCallback(() => {
+    const restoreFlow = async () => {
+      const flow = JSON.parse(localStorage.getItem(flowKey));
+
+      if (flow) {
+        const { x = 0, y = 0, zoom = 1 } = flow.viewport;
+        setNodes(flow.nodes || []);
+        setEdges(flow.edges || []);
+        setViewport({ x, y, zoom });
+      }
+    };
+
+    restoreFlow();
+  }, [setEdges, setNodes, setViewport]);
+
+  // save flow upon update
+  useEffect(() => {
+    onSave();
+  }, [nodes, edges, onSave]);
+
+  // restore flow on mount
+  useEffect(() => {
+    onRestore();
+  }, [onRestore]);
 
   return (
     <div className="w-full h-full p-4 flex flex-col">
@@ -85,12 +93,12 @@ export default function App() {
       <div className="mt-4 flex-auto border border-gray-200 rounded-lg relative">
         <div className="w-full h-full">
           <ReactFlow
+            onInit={setRfInstance}
             nodes={nodes}
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
-            onNodeDoubleClick={onNodeDoubleClick}
             nodeTypes={{
               appNode: AppCustomNode,
             }}

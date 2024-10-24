@@ -14,7 +14,6 @@
     width: 15px;
     height: 30px;
     border-radius: 5px;
-    background-color: #69c;
   }
 
   .react-flow__handle-top {
@@ -27,9 +26,11 @@
 
   .react-flow__handle-left {
     left: -5px;
+    background-color: rgb(65, 191, 92);
   }
 
   .react-flow__handle-right {
     right: -5px;
+    background-color: rgb(47, 109, 170);
   }
 }
