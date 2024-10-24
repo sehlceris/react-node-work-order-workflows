@@ -10,6 +10,11 @@ import {
   useReactFlow,
   ReactFlowInstance,
   Edge,
+  addEdge,
+  Connection,
+  OnConnect,
+  ConnectionState,
+  OnConnectEnd,
 } from '@xyflow/react';
 
 import '@xyflow/react/dist/style.css';
@@ -24,7 +29,7 @@ export const FlowChart = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState<AppNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
-  const { setViewport } = useReactFlow();
+  const { setViewport, screenToFlowPosition } = useReactFlow();
 
   const onAddNode = useCallback(() => {
     const newNode: AppNode = {
@@ -69,6 +74,50 @@ export const FlowChart = () => {
     restoreFlow();
   }, [setEdges, setNodes, setViewport]);
 
+  const onConnect: OnConnect = useCallback(
+    (connection: Connection) => setEdges((eds) => addEdge(connection, eds)),
+    [setEdges],
+  );
+
+  const onConnectEnd: OnConnectEnd = useCallback(
+    (event, connectionState: ConnectionState) => {
+      // when a connection is dropped on the pane it's not valid
+      if (!connectionState.isValid) {
+        // we need to remove the wrapper bounds, in order to get the correct position
+        const id = `${nodes.length + 1}`;
+        const { clientX, clientY } =
+          'changedTouches' in event ? event.changedTouches[0] : event;
+        const newNode: AppNode = {
+          id,
+          position: screenToFlowPosition({
+            x: clientX,
+            y: clientY,
+          }),
+          data: {
+            label: `Node ${id}`,
+            onLabelChange: (label: string) => {
+              setNodes((nds) =>
+                nds.map((n) =>
+                  n.id === newNode.id
+                    ? { ...n, data: { ...n.data, label } }
+                    : n,
+                ),
+              );
+            },
+          },
+          type: 'appNode',
+          origin: [0.5, 0.0],
+        };
+
+        setNodes((nds) => nds.concat(newNode));
+        setEdges((eds) =>
+          eds.concat({ id, source: connectionState.fromNode!.id, target: id }),
+        );
+      }
+    },
+    [nodes.length, screenToFlowPosition, setNodes, setEdges],
+  );
+
   // save flow upon update
   useEffect(() => {
     onSave();
@@ -88,6 +137,8 @@ export const FlowChart = () => {
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          onConnectEnd={onConnectEnd}
           nodeTypes={{
             appNode: AppCustomNode,
           }}
