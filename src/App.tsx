@@ -46,7 +46,7 @@ export default function App() {
     const newNode: Node = {
       id: `${nodes.length + 1}`,
       data: { label: `Node ${nodes.length + 1}` },
-      position: { x: Math.random() * 500, y: Math.random() * 500 },
+      position: { x: 0, y: 0 },
     };
     setNodes((nds) => nds.concat(newNode));
   }, [nodes, setNodes]);
@@ -57,7 +57,9 @@ export default function App() {
       if (newLabel) {
         setNodes((nds) =>
           nds.map((n) =>
-            n.id === node.id ? { ...n, data: { ...n.data, label: newLabel } } : n
+            n.id === node.id
+              ? { ...n, data: { ...n.data, label: newLabel } }
+              : n
           )
         );
       }
@@ -68,23 +70,29 @@ export default function App() {
   return (
     <div className="w-full h-full p-4 flex flex-col">
       <h1>Workflow Editor</h1>
-      <button onClick={onAddNode} className="mb-4 p-2 bg-blue-500 text-white rounded">
-        Add Node
-      </button>
-      <div className="mt-4 flex-auto border border-gray-200 rounded-lg">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onNodeDoubleClick={onNodeDoubleClick}
-          deleteKeyCode="Delete"
+      <div className="mt-4 flex-auto border border-gray-200 rounded-lg relative">
+        <div className="w-full h-full">
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onNodeDoubleClick={onNodeDoubleClick}
+            deleteKeyCode="Delete"
+          >
+            <Controls />
+            <MiniMap />
+            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+          </ReactFlow>
+        </div>
+
+        <button
+          onClick={onAddNode}
+          className="absolute top-4 right-4 w-8 h-8 bg-blue-500 text-white rounded-full items-center justify-center"
         >
-          <Controls />
-          <MiniMap />
-          <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
-        </ReactFlow>
+          +
+        </button>
       </div>
     </div>
   );
