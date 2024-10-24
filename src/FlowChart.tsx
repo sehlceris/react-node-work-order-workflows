@@ -65,7 +65,20 @@ export const FlowChart = () => {
 
       if (flow) {
         const { x = 0, y = 0, zoom = 1 } = flow.viewport;
-        setNodes(flow.nodes || []);
+        const restoredNodes = flow.nodes.map((node: AppNode) => ({
+          ...node,
+          data: {
+            ...node.data,
+            onLabelChange: (label: string) => {
+              setNodes((nds) =>
+                nds.map((n) =>
+                  n.id === node.id ? { ...n, data: { ...n.data, label } } : n,
+                ),
+              );
+            },
+          },
+        }));
+        setNodes(restoredNodes);
         setEdges(flow.edges || []);
         setViewport({ x, y, zoom });
       }
