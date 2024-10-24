@@ -56,6 +56,7 @@ export const FlowChart = () => {
 
   const createOnDelete = useCallback(
     (nodeId: string) => () => {
+      console.log('deleteElements', nodeId);
       deleteElements({
         nodes: nodes.filter((it) => it.id === nodeId),
       });
@@ -80,6 +81,16 @@ export const FlowChart = () => {
     [createOnLabelChange, createOnStatusChange, createOnDelete],
   );
 
+  const onResetNodeCompletion = useCallback(() => {
+    setNodes((nds) =>
+      nds.map((n) => ({ ...n, data: { ...n.data, isComplete: false } })),
+    );
+  }, [setNodes]);
+
+  useEffect(() => {
+    console.log('nodes', nodes);
+  }, [nodes]);
+
   const onAddNode = useCallback(() => {
     const newNode = createNode(`${nodes.length + 1}`, { x: 0, y: 0 });
     setNodes((nds) => nds.concat(newNode));
@@ -88,33 +99,31 @@ export const FlowChart = () => {
   const onSave = useCallback(() => {
     if (rfInstance) {
       const flow = rfInstance.toObject();
+      console.log('onSave', flow);
       localStorage.setItem(flowKey, JSON.stringify(flow));
     }
   }, [rfInstance]);
 
   const onRestore = useCallback(() => {
-    const restoreFlow = async () => {
-      const storedFlow = localStorage.getItem(flowKey);
-      const flow = storedFlow ? JSON.parse(storedFlow) : null;
+    console.log('restoreFlow');
+    const storedFlow = localStorage.getItem(flowKey);
+    const flow = storedFlow ? JSON.parse(storedFlow) : null;
 
-      if (flow) {
-        const { x = 0, y = 0, zoom = 1 } = flow.viewport;
-        const restoredNodes = flow.nodes.map((node: AppNode) => ({
-          ...node,
-          data: {
-            ...node.data,
-            onLabelChange: createOnLabelChange(node.id),
-            onStatusChange: createOnStatusChange(node.id),
-            onDelete: createOnDelete(node.id),
-          },
-        }));
-        setNodes(restoredNodes);
-        setEdges(flow.edges || []);
-        setViewport({ x, y, zoom });
-      }
-    };
-
-    return restoreFlow;
+    if (flow) {
+      const { x = 0, y = 0, zoom = 1 } = flow.viewport;
+      const restoredNodes = flow.nodes.map((node: AppNode) => ({
+        ...node,
+        data: {
+          ...node.data,
+          onLabelChange: createOnLabelChange(node.id),
+          onStatusChange: createOnStatusChange(node.id),
+          onDelete: createOnDelete(node.id),
+        },
+      }));
+      setNodes(restoredNodes);
+      setEdges(flow.edges || []);
+      setViewport({ x, y, zoom });
+    }
   }, [
     setNodes,
     setEdges,
@@ -123,13 +132,6 @@ export const FlowChart = () => {
     createOnStatusChange,
     createOnDelete,
   ]);
-
-  useEffect(() => {
-    if (!initialized.current && onRestore) {
-      initialized.current = true;
-      onRestore();
-    }
-  }, [onRestore]);
 
   const onConnect: OnConnect = useCallback(
     (connection: Connection) => setEdges((eds) => addEdge(connection, eds)),
@@ -158,12 +160,17 @@ export const FlowChart = () => {
 
   // save flow upon update
   useEffect(() => {
-    onSave();
+    if (initialized.current) {
+      onSave();
+    }
   }, [nodes, edges, onSave]);
 
   // restore flow on mount
   useEffect(() => {
-    onRestore();
+    if (!initialized.current && onRestore) {
+      initialized.current = true;
+      onRestore();
+    }
   }, [onRestore]);
 
   return (
@@ -187,12 +194,21 @@ export const FlowChart = () => {
         </ReactFlow>
       </div>
 
-      <button
-        onClick={onAddNode}
-        className="absolute top-4 right-4 w-8 h-8 bg-blue-500 text-white rounded-full items-center justify-center"
-      >
-        +
-      </button>
+      <div className="absolute top-4 right-4 flex gap-2">
+        <button
+          onClick={onResetNodeCompletion}
+          className="w-8 h-8 bg-green-500 text-white rounded-full items-center justify-center"
+        >
+          {/* This is the reset button. Just imagine there's a nice FontAwesome icon here. */}
+          RS
+        </button>
+        <button
+          onClick={onAddNode}
+          className="w-8 h-8 bg-blue-500 text-white rounded-full items-center justify-center"
+        >
+          +
+        </button>
+      </div>
     </div>
   );
 };
