@@ -1,14 +1,14 @@
-import { NodeProps } from '@xyflow/react';
+import { Handle, NodeProps, Position } from '@xyflow/react';
 import { AppNode } from './types';
 
-export const CustomNode = ({ id, data }: NodeProps<AppNode>) => (
+export const AppCustomNode = ({ id, data }: NodeProps<AppNode>) => (
   <div className="relative bg-white border border-gray-300 rounded p-2">
-    <button
-      className="absolute top-0 right-0 text-red-500 font-bold"
-      onClick={() => data.onRemove?.(id)}
-    >
-      X
-    </button>
-    {data.label}
+    <input
+      type="text"
+      value={data.label}
+      onChange={(evt) => data.onLabelChange?.(evt.target.value)}
+    />
+    <Handle type="target" position={Position.Left} id={`${id}-target`} />
+    <Handle type="source" position={Position.Right} id={`${id}-source`} />
   </div>
 );

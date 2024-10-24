@@ -14,12 +14,28 @@ import {
 } from '@xyflow/react';
 
 import '@xyflow/react/dist/style.css';
-import { AppCustomNode } from './AppCustomNode';
 import { AppNode } from './types';
 import { initialNodes, initialEdges } from './util';
+import { AppCustomNode } from './AppCustomNode';
 
 export default function App() {
-  const [nodes, setNodes, onNodesChange] = useNodesState<AppNode>(initialNodes);
+  const [nodes, setNodes, onNodesChange] = useNodesState<AppNode>(
+    initialNodes.map((initialNode) => ({
+      ...initialNode,
+      data: {
+        ...initialNode.data,
+        onLabelChange: (label) => {
+          setNodes((nds) =>
+            nds.map((n) =>
+              n.id === initialNode.id
+                ? { ...n, data: { ...n.data, label } }
+                : n,
+            ),
+          );
+        },
+      },
+    })),
+  );
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   const onConnect = useCallback(
@@ -30,7 +46,16 @@ export default function App() {
   const onAddNode = useCallback(() => {
     const newNode: AppNode = {
       id: `${nodes.length + 1}`,
-      data: { label: `Node ${nodes.length + 1}` },
+      data: {
+        label: `Node ${nodes.length + 1}`,
+        onLabelChange: (label) => {
+          setNodes((nds) =>
+            nds.map((n) =>
+              n.id === newNode.id ? { ...n, data: { ...n.data, label } } : n,
+            ),
+          );
+        },
+      },
       position: { x: 0, y: 0 },
       type: 'appNode',
     };
@@ -66,6 +91,9 @@ export default function App() {
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onNodeDoubleClick={onNodeDoubleClick}
+            nodeTypes={{
+              appNode: AppCustomNode,
+            }}
           >
             <Controls />
             <MiniMap />
