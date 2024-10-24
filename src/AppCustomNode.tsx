@@ -2,7 +2,11 @@ import { Handle, NodeProps, Position } from '@xyflow/react';
 import { AppNode } from './types';
 
 export const AppCustomNode = ({ id, data }: NodeProps<AppNode>) => (
-  <div className="relative bg-white border border-gray-300 rounded p-2">
+  <div
+    className={`relative bg-white border-8 rounded p-2 ${
+      data.isActive ? 'border-yellow-400' : 'border-gray-300'
+    }`}
+  >
     <input
       type="text"
       value={data.label}

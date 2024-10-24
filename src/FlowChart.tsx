@@ -45,13 +45,30 @@ export const FlowChart = () => {
 
   const createOnStatusChange = useCallback(
     (nodeId: string) => (isComplete: boolean) => {
-      setNodes((nds) =>
-        nds.map((n) =>
+      setNodes((nds) => {
+        const updatedNodes = nds.map((n) =>
           n.id === nodeId ? { ...n, data: { ...n.data, isComplete } } : n,
-        ),
-      );
+        );
+
+        // Check and update dependent nodes
+        return updatedNodes.map((node) => {
+          const incomingEdges = edges.filter((edge) => edge.target === node.id);
+          const allDependenciesComplete = incomingEdges.every(
+            (edge) =>
+              updatedNodes.find((n) => n.id === edge.source)?.data.isComplete,
+          );
+
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              isActive: allDependenciesComplete && !node.data.isComplete,
+            },
+          };
+        });
+      });
     },
-    [setNodes],
+    [setNodes, edges],
   );
 
   const createOnDelete = useCallback(
@@ -76,6 +93,7 @@ export const FlowChart = () => {
       data: {
         label: `Node ${id}`,
         isComplete: false,
+        isActive: false,
         onLabelChange: createOnLabelChange(id),
         onStatusChange: createOnStatusChange(id),
         onDelete: createOnDelete(id),
