@@ -29,7 +29,7 @@ export const FlowChart = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState<AppNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
-  const { setViewport, screenToFlowPosition } = useReactFlow();
+  const { setViewport, screenToFlowPosition, deleteElements } = useReactFlow();
 
   const createOnLabelChange = useCallback(
     (nodeId: string) => (label: string) => {
@@ -42,6 +42,26 @@ export const FlowChart = () => {
     [setNodes],
   );
 
+  const createOnStatusChange = useCallback(
+    (nodeId: string) => (isComplete: boolean) => {
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === nodeId ? { ...n, data: { ...n.data, isComplete } } : n,
+        ),
+      );
+    },
+    [setNodes],
+  );
+
+  const createOnDelete = useCallback(
+    (nodeId: string) => () => {
+      deleteElements({
+        nodes: nodes.filter((it) => it.id === nodeId),
+      });
+    },
+    [deleteElements, nodes],
+  );
+
   const createNode = useCallback(
     (id: string, position: { x: number; y: number }): AppNode => ({
       id,
@@ -49,11 +69,14 @@ export const FlowChart = () => {
       position,
       data: {
         label: `Node ${id}`,
+        isComplete: false,
         onLabelChange: createOnLabelChange(id),
+        onStatusChange: createOnStatusChange(id),
+        onDelete: createOnDelete(id),
       },
       origin: [0.5, 0.0],
     }),
-    [createOnLabelChange],
+    [createOnLabelChange, createOnStatusChange, createOnDelete],
   );
 
   const onAddNode = useCallback(() => {
@@ -80,6 +103,8 @@ export const FlowChart = () => {
           data: {
             ...node.data,
             onLabelChange: createOnLabelChange(node.id),
+            onStatusChange: createOnStatusChange(node.id),
+            onDelete: createOnDelete(node.id),
           },
         }));
         setNodes(restoredNodes);
@@ -89,7 +114,14 @@ export const FlowChart = () => {
     };
 
     restoreFlow();
-  }, [setEdges, setNodes, setViewport, createOnLabelChange]);
+  }, [
+    setNodes,
+    setEdges,
+    setViewport,
+    createOnLabelChange,
+    createOnStatusChange,
+    createOnDelete,
+  ]);
 
   const onConnect: OnConnect = useCallback(
     (connection: Connection) => setEdges((eds) => addEdge(connection, eds)),
