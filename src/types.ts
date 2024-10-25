@@ -10,9 +10,6 @@ export type AppNodeData = {
   label: string;
   isComplete?: boolean;
   isActive?: boolean;
-  // onLabelChange?: (id: string, label: string) => void;
-  // onStatusChange?: (id: string, isComplete: boolean) => void;
-  // onDelete?: (id: string) => void;
 };
 
 export type AppNode = Node<AppNodeData>;
@@ -26,4 +23,5 @@ export type AppState = {
   setNodes: (updater: AppNode[] | ((nodes: AppNode[]) => AppNode[])) => void;
   setEdges: (updater: Edge[] | ((edges: Edge[]) => Edge[])) => void;
   onStatusChange: (nodeId: string, isComplete: boolean) => void;
+  updateNodeActiveStatus: () => void;
 };
