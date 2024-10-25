@@ -1,36 +1,55 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import {
   ReactFlow,
   MiniMap,
   Controls,
   Background,
-  useEdgesState,
-  useNodesState,
   BackgroundVariant,
   useReactFlow,
   ReactFlowInstance,
-  Edge,
-  addEdge,
-  Connection,
-  OnConnect,
-  ConnectionState,
   OnConnectEnd,
+  NodeProps,
 } from '@xyflow/react';
 
 import '@xyflow/react/dist/style.css';
-import { AppNode } from './types';
+import { AppNode, AppState } from './types';
 import { AppCustomNode } from './AppCustomNode';
 
 const flowKey = 'react-flow-persistence';
 
+import { useStore } from './store';
+import { useShallow } from 'zustand/shallow';
+import { createNode } from './util';
+
+const selector = (state: AppState) => ({
+  nodes: state.nodes,
+  edges: state.edges,
+  onNodesChange: state.onNodesChange,
+  onEdgesChange: state.onEdgesChange,
+  onConnect: state.onConnect,
+  setNodes: state.setNodes,
+  setEdges: state.setEdges,
+  onStatusChange: state.onStatusChange,
+});
+
 export const FlowChart = () => {
+  //   console.log('render');
+
   const initialized = useRef(false);
   const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState<AppNode>([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const {
+    nodes,
+    edges,
+    onNodesChange,
+    onEdgesChange,
+    onConnect,
+    setNodes,
+    setEdges,
+    onStatusChange,
+  } = useStore(useShallow(selector));
 
-  const { setViewport, screenToFlowPosition, deleteElements } = useReactFlow();
+  const { setViewport, screenToFlowPosition } = useReactFlow();
 
   const onLabelChange = useCallback(
     (nodeId: string, label: string) => {
@@ -46,57 +65,9 @@ export const FlowChart = () => {
   const onDelete = useCallback(
     (nodeId: string) => {
       console.log('deleteElement', nodeId);
-      deleteElements({
-        nodes: [
-          {
-            id: nodeId,
-          },
-        ],
-      });
-    },
-    [deleteElements],
-  );
-
-  const onStatusChange = useCallback(
-    (nodeId: string, isComplete: boolean) => {
-      setNodes((currentNodes) =>
-        currentNodes.map((node) => {
-          // Update the node that had its completion status changed
-          if (node.id === nodeId) {
-            return {
-              ...node,
-              data: { ...node.data, isComplete, isActive: false },
-            };
-          }
-          // All other nodes get deactivated
-          else {
-            return {
-              ...node,
-              data: { ...node.data, isActive: false },
-            };
-          }
-        }),
-      );
+      setNodes((nds) => nds.filter((n) => n.id !== nodeId));
     },
     [setNodes],
-  );
-
-  const createNode = useCallback(
-    (id: string, position: { x: number; y: number }): AppNode => ({
-      id,
-      type: 'appNode',
-      position,
-      data: {
-        label: `Node ${id}`,
-        isComplete: false,
-        isActive: false,
-        onLabelChange,
-        onStatusChange,
-        onDelete,
-      },
-      origin: [0.5, 0.0],
-    }),
-    [onLabelChange, onDelete, onStatusChange],
   );
 
   const onResetNodeCompletion = useCallback(() => {
@@ -113,7 +84,7 @@ export const FlowChart = () => {
   const onAddNode = useCallback(() => {
     const newNode = createNode(`${nodes.length + 1}`, { x: 0, y: 0 });
     setNodes((nds) => nds.concat(newNode));
-  }, [nodes.length, createNode, setNodes]);
+  }, [nodes.length, setNodes]);
 
   const onSave = useCallback(() => {
     if (rfInstance) {
@@ -152,21 +123,15 @@ export const FlowChart = () => {
     onStatusChange,
   ]);
 
-  const onConnect: OnConnect = useCallback(
-    (connection: Connection) => setEdges((eds) => addEdge(connection, eds)),
-    [setEdges],
-  );
-
   const onConnectEnd: OnConnectEnd = useCallback(
-    (event, connectionState: ConnectionState) => {
+    (event, connectionState) => {
       if (!connectionState.isValid) {
         const id = `${nodes.length + 1}`;
         const { clientX, clientY } =
           'changedTouches' in event ? event.changedTouches[0] : event;
-        const newNode = createNode(
-          id,
-          screenToFlowPosition({ x: clientX, y: clientY }),
-        );
+
+        const position = screenToFlowPosition({ x: clientX, y: clientY });
+        const newNode = createNode(id, position);
 
         setNodes((nds) => nds.concat(newNode));
         setEdges((eds) =>
@@ -174,7 +139,7 @@ export const FlowChart = () => {
         );
       }
     },
-    [nodes.length, screenToFlowPosition, setNodes, setEdges, createNode],
+    [nodes.length, setNodes, setEdges, screenToFlowPosition],
   );
 
   // save flow upon update
@@ -192,6 +157,20 @@ export const FlowChart = () => {
     }
   }, [onRestore]);
 
+  const nodeTypes = useMemo(
+    () => ({
+      appNode: (props: NodeProps<AppNode>) => (
+        <AppCustomNode
+          {...props}
+          onLabelChange={onLabelChange}
+          onStatusChange={onStatusChange}
+          onDelete={onDelete}
+        />
+      ),
+    }),
+    [onLabelChange, onStatusChange, onDelete],
+  );
+
   return (
     <div className="w-full h-full">
       <div className="w-full h-full">
@@ -203,9 +182,7 @@ export const FlowChart = () => {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onConnectEnd={onConnectEnd}
-          nodeTypes={{
-            appNode: AppCustomNode,
-          }}
+          nodeTypes={nodeTypes}
         >
           <Controls />
           <MiniMap />
