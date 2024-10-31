@@ -101,6 +101,7 @@ export const useStore = create<AppState>((set, get) => ({
             id: Math.round(Math.random() * 10000).toString(),
           };
 
+          // o^n3 ??
           const dupeEdge = filteredEdges.find((it) => {
             return it.source === edge.source && it.target === edge.target;
           });

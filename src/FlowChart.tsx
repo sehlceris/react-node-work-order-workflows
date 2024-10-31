@@ -137,9 +137,26 @@ export const FlowChart = () => {
         const newNode = createNode(id, position);
 
         setNodes((nds) => nds.concat(newNode));
-        setEdges((eds) =>
-          eds.concat({ id, source: connectionState.fromNode!.id, target: id }),
-        );
+
+        console.log(connectionState);
+
+        let newEdge;
+
+        if (connectionState.fromPosition === 'right') {
+          newEdge = {
+            id,
+            source: connectionState.fromNode!.id,
+            target: id,
+          };
+        } else {
+          newEdge = {
+            id,
+            source: id,
+            target: connectionState.fromNode!.id,
+          };
+        }
+
+        setEdges((eds) => eds.concat(newEdge));
       }
     },
     [nodes.length, setNodes, setEdges, screenToFlowPosition],
