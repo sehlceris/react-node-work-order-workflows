@@ -1,5 +1,10 @@
 import { create } from 'zustand';
-import { addEdge, applyNodeChanges, applyEdgeChanges } from '@xyflow/react';
+import {
+  addEdge,
+  applyNodeChanges,
+  applyEdgeChanges,
+  Edge,
+} from '@xyflow/react';
 
 import { type AppState, AppNode } from './types';
 
@@ -71,14 +76,55 @@ export const useStore = create<AppState>((set, get) => ({
 
   deleteNode: (nodeId: string) => {
     set((state) => {
+      // // step: delete invalid edges
       const newNodes = state.nodes.filter((it) => it.id !== nodeId);
-      const newEdges = state.edges.filter(
+
+      let newEdges = [...state.edges];
+
+      const edgesToAdd: Edge[] = [];
+
+      const allSourceEdges = state.edges.filter((it) => it.target === nodeId);
+      const allSourceNodes = allSourceEdges.map((it) => it.source);
+
+      const allTargetEdges = state.edges.filter((it) => it.source === nodeId);
+      const allTargetNodes = allTargetEdges.map((it) => it.target);
+
+      const filteredEdges = state.edges.filter(
         (it) => it.source !== nodeId && it.target !== nodeId,
       );
+
+      allSourceNodes.forEach((sourceNode) => {
+        allTargetNodes.forEach((targetNode) => {
+          const edge: Edge = {
+            source: sourceNode,
+            target: targetNode,
+            id: Math.round(Math.random() * 10000).toString(),
+          };
+
+          const dupeEdge = filteredEdges.find((it) => {
+            return it.source === edge.source && it.target === edge.target;
+          });
+
+          if (!dupeEdge) {
+            edgesToAdd.push(edge);
+          }
+        });
+      });
+
+      newEdges = [...filteredEdges, ...edgesToAdd];
+
+      /*
+        TODO: when deleting a node...
+        - find all nodes connected to the deleted node's target port
+        - find all nodes connected to the deleted node's source port
+        - create edges from all source nodes to all target nodes
+      */
+
       const newState = {
         nodes: newNodes,
         edges: newEdges,
       };
+
       return newState;
     });
     get().updateNodeActiveStatus();
