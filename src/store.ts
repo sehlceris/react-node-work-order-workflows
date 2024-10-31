@@ -68,4 +68,19 @@ export const useStore = create<AppState>((set, get) => ({
     }));
     get().updateNodeActiveStatus();
   },
+
+  deleteNode: (nodeId: string) => {
+    set((state) => {
+      const newNodes = state.nodes.filter((it) => it.id !== nodeId);
+      const newEdges = state.edges.filter(
+        (it) => it.source !== nodeId && it.target !== nodeId,
+      );
+      const newState = {
+        nodes: newNodes,
+        edges: newEdges,
+      };
+      return newState;
+    });
+    get().updateNodeActiveStatus();
+  },
 }));

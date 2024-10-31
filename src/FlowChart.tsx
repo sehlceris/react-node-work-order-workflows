@@ -30,6 +30,7 @@ const selector = (state: AppState) => ({
   setNodes: state.setNodes,
   setEdges: state.setEdges,
   onStatusChange: state.onStatusChange,
+  deleteNode: state.deleteNode,
 });
 
 export const FlowChart = () => {
@@ -47,6 +48,7 @@ export const FlowChart = () => {
     setNodes,
     setEdges,
     onStatusChange,
+    deleteNode,
   } = useStore(useShallow(selector));
 
   const { setViewport, screenToFlowPosition } = useReactFlow();
@@ -65,9 +67,10 @@ export const FlowChart = () => {
   const onDelete = useCallback(
     (nodeId: string) => {
       console.log('deleteElement', nodeId);
-      setNodes((nds) => nds.filter((n) => n.id !== nodeId));
+      // setNodes((nds) => nds.filter((n) => n.id !== nodeId));
+      deleteNode(nodeId);
     },
-    [setNodes],
+    [deleteNode],
   );
 
   const onResetNodeCompletion = useCallback(() => {

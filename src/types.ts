@@ -24,4 +24,5 @@ export type AppState = {
   setEdges: (updater: Edge[] | ((edges: Edge[]) => Edge[])) => void;
   onStatusChange: (nodeId: string, isComplete: boolean) => void;
   updateNodeActiveStatus: () => void;
+  deleteNode: (nodeId: string) => void;
 };
